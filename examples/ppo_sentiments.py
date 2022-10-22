@@ -1,7 +1,6 @@
 from typing import List
 
 import torch
-from transformers import pipeline
 
 import wandb
 from trlx.data.configs import TRLConfig
@@ -10,8 +9,9 @@ from trlx.orchestrator.ppo_orchestrator import PPOOrchestrator
 from trlx.pipeline.ppo_pipeline import PPOPipeline
 from trlx.utils.loading import get_model, get_orchestrator, get_pipeline
 
-if __name__ == "__main__":
-    cfg = TRLConfig.load_yaml("configs/ppo_config.yml")
+
+def _train_function(cfg):
+    from transformers import pipeline
 
     sentiment_pipe = pipeline(
         "sentiment-analysis", "lvwerra/distilbert-imdb", device=-1
@@ -39,3 +39,11 @@ if __name__ == "__main__":
     model.learn()
 
     print("DONE!")
+
+
+if __name__ == "__main__":
+    cfg = TRLConfig.load_yaml("configs/ppo_config.yml")
+    print("#" * 10)
+    print(wandb.run)
+    print("#" * 10)
+    _train_function(cfg)

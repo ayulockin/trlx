@@ -27,7 +27,7 @@ class AccelerateRLModel(BaseRLModel):
     RL Model that uses accelerate for training
     """
 
-    def __init__(self, config, rollout_storage, train_mode=True):
+    def __init__(self, config, rollout_storage, train_mode=True, accelerator=None):
         super().__init__(config, train_mode)
 
         self.store = rollout_storage  # Need to pass in rollout_storage to be loaded into accelerate object
@@ -51,16 +51,22 @@ class AccelerateRLModel(BaseRLModel):
             with open(self.config.train.accelerate_config_path, mode="r") as file:
                 accelerate_config = yaml.safe_load(file)
             config_dict.update(accelerate_config)
-        self.accelerator = Accelerator(log_with="wandb")
+        if accelerator is None:
+            self.accelerator = Accelerator(log_with="wandb")
+        else:
+            self.accelerator = accelerator
 
         if WORLD_SIZE > 1:
             torch.distributed.barrier(device_ids=[LOCAL_RANK])
         else:
             torch.random.manual_seed(1000)
         if self.accelerator.is_main_process:
-            self.accelerator.init_trackers(
-                project_name=self.config.train.project_name, config=config_dict
-            )
+            if accelerator is None:
+                self.accelerator.init_trackers(
+                    project_name=self.config.train.project_name, config=config_dict
+                )
+            else:
+                pass
 
         self.opt = torch.optim.AdamW(
             self.model.parameters(), lr=self.config.train.learning_rate_init
